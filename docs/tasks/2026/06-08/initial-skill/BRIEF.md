@@ -15,10 +15,11 @@ Create and publish the first `codex-token-discipline` skill as a personal Agent 
 - The skill contract focuses on summary-first reads, bounded subagents, phase-boundary resume state, browser/UI loop limits, always-read surface routing, and optional usage audit.
 - Existing public skills were checked; none matched this Codex-specific workflow closely enough to install as-is.
 - Local validation passes for skill metadata, project-context runtime shape, Python syntax, and a sample Conalog usage audit.
+- The repo is published at `https://github.com/perhapsspy/codex-token-discipline` and globally installed for Codex at `$AGENTS_HOME/skills/codex-token-discipline`.
 
 ## Next Step
 
-Push the repo to GitHub, then run global install with `npx skills add perhapsspy/codex-token-discipline -g -y`.
+Reopen only if the skill needs iteration after real-task use.
 
 ## Working Boundary
 
