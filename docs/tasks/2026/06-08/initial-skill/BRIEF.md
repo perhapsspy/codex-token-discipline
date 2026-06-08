@@ -16,10 +16,11 @@ Create and publish the first `codex-token-discipline` skill as a personal Agent 
 - Existing public skills were checked; none matched this Codex-specific workflow closely enough to install as-is.
 - Local validation passes for skill metadata, project-context runtime shape, Python syntax, and a sample Conalog usage audit.
 - The repo is published at `https://github.com/perhapsspy/codex-token-discipline` and globally installed for Codex at `$AGENTS_HOME/skills/codex-token-discipline`.
+- A post-release review found only low-risk compaction opportunities in `SKILL.md` and `SKILL.ko.md`; README/docs do not need changes.
 
 ## Next Step
 
-Reopen only if the skill needs iteration after real-task use.
+Validate the compacted skill text, publish it, and refresh the global skill install.
 
 ## Working Boundary
 

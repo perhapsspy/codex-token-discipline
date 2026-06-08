@@ -1,6 +1,6 @@
 ---
 name: codex-token-discipline
-description: Use when Codex work risks high token use from long sessions, broad repository exploration, large diffs/logs, browser debugging loops, many subagents, or expanding always-read instructions. Keeps context use disciplined through summary-first reads, bounded delegation, compact resume surfaces, and phase-boundary resets; can audit Codex session token usage when asked.
+description: "Use when Codex work risks high token use: long sessions, broad repo exploration, large diffs/logs, browser debugging loops, subagents, always-read surface changes, or token-usage audits. Guides summary-first reads, bounded delegation, compact resume surfaces, and phase resets."
 ---
 
 # Codex Token Discipline
@@ -39,23 +39,17 @@ If a broad read is necessary, state why and cap the next read to the smallest us
 
 Treat phase changes as context checkpoints.
 
-- After exploration, preserve the conclusion and the next decision before implementation.
-- Before switching tasks or repos, write or refresh the repo's existing resume surface.
+- Before implementation or repo/task switches, preserve the conclusion, next decision, nearest next step, and smallest useful boundary.
 - In repos using `project-context`, prefer `BRIEF.md` for compact current state and logs for evidence.
-- Keep resume state current, not historical: goal, scope, current facts, current state, nearest next step, and only the smallest useful file boundary.
-- Start a fresh session when the saved resume surface is enough to continue and the remaining work is a new phase.
+- Start a fresh session only when that surface is enough to continue.
 
-Do not save command transcripts, validation matrices, or file inventories into the resume surface just to compensate for a large conversation.
+Do not store transcripts, validation matrices, or file inventories as compensation for a large conversation.
 
 ## Subagents
 
-Use subagents to reduce main-thread context pollution, not to multiply vague work.
+Use subagents only when they reduce main-thread noise.
 
-- Make read-heavy subagents bounded and usually read-only.
-- Pass a small prompt: goal, scope, constraints, expected output, done condition, and validation command if relevant.
-- Ask for findings, evidence, impact boundary, and unknowns rather than raw notes.
-- Avoid duplicate agents on the same question.
-- Close agents after integrating results.
+Keep them bounded and usually read-only. Prompt with goal, scope, constraints, expected output, done condition, and validation command if relevant. Ask for findings with evidence, impact boundary, and unknowns; avoid duplicate scopes; close agents after integration.
 
 Use multiple subagents only for independent questions with different scopes.
 
@@ -82,21 +76,9 @@ When editing an always-read file, prefer a short routing rule over a procedure.
 
 ## Usage Audit
 
-When the user asks where tokens went, use `scripts/summarize_codex_usage.py` from this skill instead of rewriting an ad hoc parser.
+When asked where tokens went, run `scripts/summarize_codex_usage.py --help`, then audit with an explicit `--cwd-prefix`.
 
-Example:
-
-```bash
-python <skill-dir>/scripts/summarize_codex_usage.py \
-  --sessions-root ~/.codex/sessions \
-  --cwd-prefix /Users/pie/Projects/conalog \
-  --since-days 14 \
-  --top 15
-```
-
-The script reads Codex `rollout-*.jsonl` files, uses the last cumulative `token_count` per session, groups subagents with their root thread, and reports repo totals plus high-token task clusters.
-
-Use the report as a diagnosis aid. Do not treat token totals as the only quality metric; high-token work may be justified when it closes a risky task.
+The script reads Codex rollout logs and groups subagents with their root thread for diagnosis. Treat token totals as signals, not the only quality metric.
 
 ## Final Check
 
