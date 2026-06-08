@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Token Discipline"
+  short_description: "Control context growth in long Codex work"
+  default_prompt: "Use $codex-token-discipline to keep this Codex task token-efficient with bounded reads, compact resume state, and scoped subagents."
