@@ -12,22 +12,24 @@
 
 ## Current Facts
 
-- The current installed `SKILL.md` is 4,956 chars / 92 lines / 748 words.
-- The `776d19c` refresh added 488 chars / 3 lines / 71 words to `SKILL.md` versus `61c6a7c`.
-- The global AGENTS routing line adds 119 chars of always-read startup cost.
+- The current `SKILL.md` is 4,631 chars / 89 lines / 690 words after compaction.
+- Versus the pre-mitigation `776d19c` state, `SKILL.md` is down 325 chars / 3 lines / 58 words.
+- The global and portable AGENTS routing line is now 108 chars and no longer says to use the skill "early."
 - The script source grew by 2,468 chars, but source text is not loaded when the script runs; the relevant runtime cost is script output.
-- Same-input script output increased from 527 to 776 chars for the playground sample and from 2,582 to 3,925 chars for the Conalog top-5 sample.
-- Current default Conalog top-15 script output is about 7,923 chars; this is small relative to the 40k-1M+ raw outputs the script is meant to avoid, but too large for habitual preflight use on every task.
+- Current mitigation-pass script samples range from 802 chars / 9 lines for a narrow repo top-5 audit to 8,205 chars / 53 lines for `<projects-root>` top-15.
+- Script output remains acceptable for explicit audits but too large for habitual preflight use.
 
 ## Current State
 
-- Current assessment: keep the `776d19c` direction for now, but treat both skill loading and script execution as conditional tools, not default ceremony.
-- The risk is not the script source size; the risk is unnecessary skill triggering, repeated audit runs, wide prefixes such as a home directory, or using script output as a gateway into broad raw-log digging.
+- Current assessment: keep the `776d19c` direction with mitigation. Skill loading and script execution remain conditional tools, not default ceremony.
+- Implemented mitigation: compact the English/Korean skill wording and replace the global/portable AGENTS "use early" line with a narrower trigger line.
+- Script behavior is intentionally unchanged. The risk is unnecessary skill triggering, repeated audit runs, wide prefixes such as a home directory, or using script output as a gateway into broad raw-log digging.
+- Validation passed for script syntax/help, narrow and wider audit runs, project-context shape, and whitespace diffs.
 - A detailed restartable assessment and follow-up options are in `OVERHEAD-RISK-ASSESSMENT.md`.
 
 ## Next Step
 
-- Review `OVERHEAD-RISK-ASSESSMENT.md` and decide whether to implement one of the proposed mitigations: tighten the AGENTS routing phrase, reduce the script default `--top`, add a quiet/summary mode, or leave current behavior unchanged.
+- Publish or reinstall only if the user wants this repo version propagated.
 
 ## Working Boundary
 

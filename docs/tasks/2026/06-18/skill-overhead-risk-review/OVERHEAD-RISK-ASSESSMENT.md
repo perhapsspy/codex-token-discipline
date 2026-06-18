@@ -8,18 +8,19 @@ Could `codex-token-discipline` itself, or the bundled `summarize_codex_usage.py`
 
 Yes, if used as a ritual. No, if used only for high-token work, broad exploration, browser/UI loops, multi-agent work, long session transitions, or explicit token audits.
 
-The current `776d19c` refresh is proportionate: it adds a small amount of skill text and modestly larger audit output in exchange for surfacing the exact high-cost patterns seen in recent sessions. It should not become a default preflight step for ordinary edits.
+The current direction remains proportionate after the mitigation pass: trim the skill text, narrow the AGENTS routing phrase, and keep the script unchanged until output measurements show a real problem. It should not become a default preflight step for ordinary edits.
 
 ## Current Measurements
 
-Measured against `61c6a7c` (`Record compact skill refresh`) and current `776d19c` (`Tighten large-output token discipline`):
+Measured against `61c6a7c` (`Record compact skill refresh`), `776d19c` (`Tighten large-output token discipline`), and the current mitigation pass:
 
-- `SKILL.md`: 4,468 -> 4,956 chars, 89 -> 92 lines, 677 -> 748 words.
-- `SKILL.md` delta: +488 chars, +3 lines, +71 words.
-- `SKILL.ko.md`: 2,622 -> 2,963 chars, 86 -> 89 lines, 513 -> 571 words.
+- `SKILL.md`: 4,468 -> 4,956 -> 4,631 chars; 89 -> 92 -> 89 lines; 677 -> 748 -> 690 words.
+- `SKILL.md` current delta versus `61c6a7c`: +163 chars, +0 lines, +13 words.
+- `SKILL.md` mitigation delta versus pre-mitigation: -325 chars, -3 lines, -58 words.
+- `SKILL.ko.md`: 2,622 -> 2,963 -> 2,876 chars; 86 -> 89 -> 86 lines; 513 -> 571 -> 550 words.
 - `scripts/summarize_codex_usage.py`: 9,101 -> 11,569 chars, 256 -> 291 lines.
 - Script source delta: +2,468 chars, +35 lines, +147 words.
-- Global AGENTS routing line: 119 chars.
+- Global and portable AGENTS routing line: 119 -> 108 chars, with "early" removed.
 
 Same-input script-output comparison:
 
@@ -28,6 +29,15 @@ Same-input script-output comparison:
 - Current Conalog default top-15 output: about 7,923 stdout chars / 50 lines.
 - Current `<projects-root>` default top-15 output: about 7,472 stdout chars / 49 lines.
 - Current home-prefix one-day top-5 output: about 2,835 stdout chars / 21 lines.
+
+Current mitigation-pass stdout measurements:
+
+- Narrow repo sample, `--cwd-prefix <projects-root>/codex-token-discipline --since-days 3 --top 5`: 802 chars / 9 lines.
+- `<projects-root> --since-days 3 --top 3`: 2,224 chars / 17 lines.
+- `<projects-root> --since-days 3 --top 5`: 3,244 chars / 23 lines.
+- `<projects-root> --since-days 3 --top 8`: 4,739 chars / 32 lines.
+- `<projects-root> --since-days 3 --top 10`: 5,728 chars / 38 lines.
+- `<projects-root> --since-days 3 --top 15`: 8,205 chars / 53 lines.
 
 ## Why The Current Direction Can Still Be Net Positive
 
@@ -121,11 +131,18 @@ Risk:
 
 - Adds friction for legitimate whole-workspace audits.
 
-## Recommended Next Decision
+## Current Decision
 
-Start with Option A unless real follow-up sessions show over-triggering. If a change is needed, Option B is the smallest behavioral correction because it reduces always-read ambiguity without changing script behavior.
+Apply Option B and skill-text compaction now. Keep the script behavior unchanged.
 
-If script output itself becomes the concern, prefer Option C before Option D. Lowering default `--top` is simpler than introducing a new mode.
+Reasoning:
+
+- The recurring startup surface is the AGENTS line, so removing "early" reduces ceremony risk.
+- The selected-skill surface is the skill body, so compacting expression directly reduces loaded context without changing behavior.
+- The script's measured stdout is acceptable for explicit audits and still much smaller than the raw outputs it is meant to avoid.
+- The script source size does not matter unless the source itself is read; normal script execution only returns stdout.
+
+If script output itself becomes the concern, prefer Option C before Option D. Lowering default `--top` to 8 or 10 is simpler than introducing a new mode.
 
 ## Validation For Any Follow-Up Change
 

@@ -1,40 +1,38 @@
 ---
 name: codex-token-discipline
-description: "Use when Codex work risks high token use: long sessions, broad repo exploration, large diffs/logs, browser debugging loops, subagents, always-read surface changes, or token-usage audits. Guides summary-first reads, bounded delegation, compact resume surfaces, and phase resets."
+description: "Use for high-token-risk Codex work: long sessions, broad reads/diffs/logs, browser/UI loops, subagents, always-read changes, or token audits. Guides summary-first reads, bounded delegation, compact resume state, and usage audits."
 ---
 
 # Codex Token Discipline
 
 ## Purpose
 
-Keep long Codex work effective without letting context grow from noisy reads, repeated large outputs, broad delegation, or oversized always-read instructions.
-
-This skill is for operating the task, not for making the final answer terse. Preserve the user's requested depth while keeping intermediate context intentional.
+Keep long Codex work effective without letting noisy reads, repeated large outputs, broad delegation, or bulky always-read instructions crowd the context. This controls intermediate work, not final-answer depth.
 
 ## Operating Frame
 
-Use the smallest frame that changes behavior:
+Use only what changes behavior:
 
 1. Name the current phase: explore, plan, implement, verify, publish, or handoff.
 2. Define the next evidence needed before reading broadly.
 3. Prefer summaries and bounded reads before full files, diffs, logs, screenshots, or command output.
-4. Delegate noisy side work only when it can return distilled findings.
-5. At phase boundaries, save compact resume state before continuing or starting a fresh session.
+4. Delegate noisy side work only when it can return distilled findings with evidence.
+5. At phase boundaries, save compact resume state before continuing or starting fresh.
 
-Do not turn this into a ritual for small edits, direct answers, or simple commands.
+Skip the ritual for small edits, direct answers, and simple commands.
 
 ## Summary-First Reads
 
-Start narrow, then widen only when the result changes the next decision.
+Start narrow; widen only when it changes the next decision.
 
 - Search with `rg` or file lists before opening files.
 - Prefer `git diff --stat`, `git diff --name-only`, focused `git diff -- <path>`, and targeted `sed -n` ranges before full diffs.
-- For logs and command output, use `tail`, `head`, `jq`, counts, filters, or error-specific searches before full transcripts.
-- For generated or test output, keep the first actionable failure and the command that produced it; avoid repeated full reruns in the main thread.
-- Treat every large tool result as future input cost. For commands likely to exceed about 10k chars, ask for counts, paths, summaries, or the first actionable failure before full output.
-- Raise output budgets only for a specific reason, and summarize what was learned before reading more.
+- For logs and command output, use `tail`, `head`, `jq`, counts, filters, or error searches before full transcripts.
+- For generated or test output, keep the first actionable failure and command; avoid repeated full reruns in the main thread.
+- Treat large tool results as future input cost. For commands likely to exceed about 10k chars, ask for counts, paths, summaries, or the first actionable failure before full output.
+- Raise output budgets only for a specific reason; summarize before reading more.
 
-If a broad read is necessary, state why and cap the next read to the smallest useful scope.
+If a broad read is necessary, state why and cap it to the smallest useful scope.
 
 ## Long-Running Work
 
@@ -44,7 +42,7 @@ Treat phase changes as context checkpoints.
 - In repos using `project-context`, prefer `BRIEF.md` for compact current state and logs for evidence.
 - Start a fresh session only when that surface is enough to continue.
 
-Do not store transcripts, validation matrices, or file inventories as compensation for a large conversation.
+Do not store transcripts, validation matrices, or file inventories to compensate for a large conversation.
 
 ## Subagents
 
@@ -61,7 +59,7 @@ Before repeated visual or browser verification, write down the states to check.
 - Prefer one screenshot or browser pass per named state.
 - If a check fails, inspect the smallest owner: console error, DOM state, route data, or focused component.
 - Keep images, base64 screenshots, full body text, and DOM dumps out of the main thread unless that artifact itself affects the next decision.
-- Stop the visual loop once the named states are verified or a concrete blocker is isolated.
+- Stop once the named states are verified or a concrete blocker is isolated.
 
 ## Always-Read Surfaces
 
@@ -73,15 +71,15 @@ Every line in global or repo instructions has recurring cost.
 - Put current reusable domain facts in reference docs.
 - Remove stale profiles, duplicate instructions, and historical explanations instead of documenting around them.
 
-When editing an always-read file, prefer a short routing rule over a procedure.
+When editing an always-read file, prefer a short routing rule over procedure text.
 
 ## Usage Audit
 
 When asked where tokens went, run `scripts/summarize_codex_usage.py --help`, then audit with an explicit `--cwd-prefix`.
 
-The script reads Codex rollout logs and groups subagents or forks with their root thread for diagnosis. It reports token totals, tool-output size, large-output events, and browser/image signals without printing raw payloads. Treat token totals as signals, not the only quality metric.
+The script groups Codex rollout logs by root thread and reports token totals, tool-output size, large-output events, browser/image, DOM/body, broad-search, and top-output-tool signals without raw payloads.
 
-Avoid home-wide text searches during audits; point the script at `$CODEX_HOME/sessions` or another explicit sessions root.
+Treat token totals as signals, not quality. Avoid home-wide text searches; point the script at `$CODEX_HOME/sessions` or another explicit sessions root.
 
 ## Final Check
 
