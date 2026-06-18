@@ -31,6 +31,7 @@ Start narrow, then widen only when the result changes the next decision.
 - Prefer `git diff --stat`, `git diff --name-only`, focused `git diff -- <path>`, and targeted `sed -n` ranges before full diffs.
 - For logs and command output, use `tail`, `head`, `jq`, counts, filters, or error-specific searches before full transcripts.
 - For generated or test output, keep the first actionable failure and the command that produced it; avoid repeated full reruns in the main thread.
+- Treat every large tool result as future input cost. For commands likely to exceed about 10k chars, ask for counts, paths, summaries, or the first actionable failure before full output.
 - Raise output budgets only for a specific reason, and summarize what was learned before reading more.
 
 If a broad read is necessary, state why and cap the next read to the smallest useful scope.
@@ -59,7 +60,7 @@ Before repeated visual or browser verification, write down the states to check.
 
 - Prefer one screenshot or browser pass per named state.
 - If a check fails, inspect the smallest owner: console error, DOM state, route data, or focused component.
-- Keep image and browser artifacts out of the main thread unless they affect the next decision.
+- Keep images, base64 screenshots, full body text, and DOM dumps out of the main thread unless that artifact itself affects the next decision.
 - Stop the visual loop once the named states are verified or a concrete blocker is isolated.
 
 ## Always-Read Surfaces
@@ -78,7 +79,9 @@ When editing an always-read file, prefer a short routing rule over a procedure.
 
 When asked where tokens went, run `scripts/summarize_codex_usage.py --help`, then audit with an explicit `--cwd-prefix`.
 
-The script reads Codex rollout logs and groups subagents with their root thread for diagnosis. Treat token totals as signals, not the only quality metric.
+The script reads Codex rollout logs and groups subagents or forks with their root thread for diagnosis. It reports token totals, tool-output size, large-output events, and browser/image signals without printing raw payloads. Treat token totals as signals, not the only quality metric.
+
+Avoid home-wide text searches during audits; point the script at `$CODEX_HOME/sessions` or another explicit sessions root.
 
 ## Final Check
 

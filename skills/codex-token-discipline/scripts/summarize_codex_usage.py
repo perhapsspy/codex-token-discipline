@@ -24,8 +24,10 @@ class Session:
     token_events: int = 0
     calls: int = 0
     output_chars: int = 0
+    max_output_chars: int = 0
     metrics: Counter[str] = field(default_factory=collections.Counter)
     call_names: Counter[str] = field(default_factory=collections.Counter)
+    output_by_tool: Counter[str] = field(default_factory=collections.Counter)
 
 
 def parse_args() -> argparse.Namespace:
@@ -64,8 +66,11 @@ def parse_session(path: Path) -> Session | None:
     token_events = 0
     calls = 0
     output_chars = 0
+    max_output_chars = 0
     metrics: Counter[str] = collections.Counter()
     call_names: Counter[str] = collections.Counter()
+    output_by_tool: Counter[str] = collections.Counter()
+    calls_by_id: dict[str, str] = {}
 
     try:
         lines = path.open(errors="ignore")
@@ -93,18 +98,30 @@ def parse_session(path: Path) -> Session | None:
                 calls += 1
                 name = payload.get("name") or "custom"
                 call_names[name] += 1
+                if payload.get("call_id"):
+                    calls_by_id[payload["call_id"]] = name
                 collect_call_metrics(name, payload.get("arguments") or "", metrics)
             elif item_type in {"function_call_output", "custom_tool_call_output"}:
-                output_chars += len(str(payload.get("output") or payload.get("content") or ""))
+                tool_name = calls_by_id.get(payload.get("call_id"), "unknown")
+                size = len(str(payload.get("output") or payload.get("content") or ""))
+                output_chars += size
+                max_output_chars = max(max_output_chars, size)
+                output_by_tool[tool_name] += size
+                if size >= 500_000:
+                    metrics["output_500k"] += 1
+                elif size >= 100_000:
+                    metrics["output_100k"] += 1
+                elif size >= 50_000:
+                    metrics["output_50k"] += 1
 
     if not meta or not usage:
         return None
 
-    parent = None
+    parent = meta.get("forked_from_id")
     try:
-        parent = ((meta.get("source") or {}).get("subagent") or {}).get("thread_spawn", {}).get("parent_thread_id")
+        parent = parent or ((meta.get("source") or {}).get("subagent") or {}).get("thread_spawn", {}).get("parent_thread_id")
     except AttributeError:
-        parent = None
+        pass
 
     return Session(
         id=meta.get("id") or path.stem,
@@ -116,8 +133,10 @@ def parse_session(path: Path) -> Session | None:
         token_events=token_events,
         calls=calls,
         output_chars=output_chars,
+        max_output_chars=max_output_chars,
         metrics=metrics,
         call_names=call_names,
+        output_by_tool=output_by_tool,
     )
 
 
@@ -130,6 +149,10 @@ def collect_call_metrics(name: str, args: str, metrics: Counter[str]) -> None:
         metrics["view_image"] += 1
     if name == "js":
         metrics["js"] += 1
+        if "screenshot" in args or "emitImage" in args:
+            metrics["browser_image"] += 1
+        if "innerText" in args or "document.body" in args or "outerHTML" in args:
+            metrics["dom_or_body_dump"] += 1
     if name != "exec_command":
         return
     try:
@@ -152,6 +175,8 @@ def collect_call_metrics(name: str, args: str, metrics: Counter[str]) -> None:
         metrics["test_or_build"] += 1
     if "kubectl" in cmd:
         metrics["kubectl"] += 1
+    if re.search(r"(^|\s)find\s+/(Users|home|var|tmp)\b", cmd) or re.search(r"(^|\s)rg\s+.*\s/(Users|home)\b", cmd):
+        metrics["broad_abs_search"] += 1
 
 
 def root_id(session_id: str, sessions: dict[str, Session]) -> str:
@@ -204,6 +229,8 @@ def main() -> int:
         totals["sessions"] += 1
         totals["token_events"] += session.token_events
         totals["calls"] += session.calls
+        totals["output_chars"] += session.output_chars
+        totals["max_output_chars"] = max(totals["max_output_chars"], session.max_output_chars)
         totals.update(session.metrics)
         clusters[root_id(sid, sessions)].append(session)
 
@@ -215,14 +242,16 @@ def main() -> int:
         print(
             f"- {repo}: total={format_tokens(totals['total'])} "
             f"uncached={format_tokens(uncached)} output={format_tokens(totals['output'])} "
-            f"sessions={totals['sessions']} calls={totals['calls']} "
-            f"large_output_budget={totals['large_output_budget']} spawn={totals['spawn']}"
+            f"sessions={totals['sessions']} calls={totals['calls']} output_chars={format_tokens(totals['output_chars'])} "
+            f"max_output_chars={format_tokens(totals['max_output_chars'])} large_outputs={totals['output_50k'] + totals['output_100k'] + totals['output_500k']} "
+            f"browser_image={totals['browser_image']} dom_dump={totals['dom_or_body_dump']} spawn={totals['spawn']}"
         )
 
     cluster_rows = []
     for root, members in clusters.items():
         totals: Counter[str] = collections.Counter()
         metrics: Counter[str] = collections.Counter()
+        output_by_tool: Counter[str] = collections.Counter()
         repos: Counter[str] = collections.Counter()
         for session in members:
             add_usage(totals, session.usage)
@@ -230,22 +259,28 @@ def main() -> int:
             totals["token_events"] += session.token_events
             totals["calls"] += session.calls
             totals["output_chars"] += session.output_chars
+            totals["max_output_chars"] = max(totals["max_output_chars"], session.max_output_chars)
             metrics.update(session.metrics)
+            output_by_tool.update(session.output_by_tool)
             repos[session.cwd.removeprefix(cwd_prefix).strip("/").split("/", 1)[0] or Path(cwd_prefix).name] += 1
-        cluster_rows.append((totals["total"], root, members, totals, metrics, repos))
+        cluster_rows.append((totals["total"], root, members, totals, metrics, output_by_tool, repos))
 
     print()
     print(f"Top {min(args.top, len(cluster_rows))} task clusters:")
-    for _, root, members, totals, metrics, repos in sorted(cluster_rows, reverse=True)[: args.top]:
+    for _, root, members, totals, metrics, output_by_tool, repos in sorted(cluster_rows, reverse=True)[: args.top]:
         root_session = sessions.get(root) or members[0]
         uncached = totals["input"] - totals["cached"]
+        top_outputs = ",".join(f"{name}:{format_tokens(chars)}" for name, chars in output_by_tool.most_common(3))
         print(
             f"- {root_session.timestamp} {root}: repos={dict(repos)} sessions={totals['sessions']} "
             f"total={format_tokens(totals['total'])} uncached={format_tokens(uncached)} "
-            f"output={format_tokens(totals['output'])} calls={totals['calls']} "
-            f"large_output_budget={metrics['large_output_budget']} sed={metrics['sed']} "
-            f"rg={metrics['rg']} spawn={metrics['spawn']}"
+            f"output={format_tokens(totals['output'])} calls={totals['calls']} output_chars={format_tokens(totals['output_chars'])} "
+            f"max_output_chars={format_tokens(totals['max_output_chars'])} large_outputs={metrics['output_50k'] + metrics['output_100k'] + metrics['output_500k']} "
+            f"large_output_budget={metrics['large_output_budget']} browser_image={metrics['browser_image']} dom_dump={metrics['dom_or_body_dump']} "
+            f"broad_abs_search={metrics['broad_abs_search']} sed={metrics['sed']} rg={metrics['rg']} spawn={metrics['spawn']}"
         )
+        if top_outputs:
+            print(f"  output_by_tool={top_outputs}")
         print(f"  {root_session.path}")
 
     return 0
