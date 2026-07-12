@@ -4,11 +4,7 @@
 
 ## 요약
 
-`codex-token-discipline`은 긴 Codex 작업에서 컨텍스트가 noisy read, 큰 출력, 반복 브라우저 루프, 넓은 서브에이전트 위임, 비대한 always-read 지침 때문에 커지는 것을 막는 운영 스킬입니다.
-
-최종 답변을 무조건 줄이는 스킬이 아니라, 중간 작업을 summary-first read, bounded delegation, compact resume state, phase-boundary reset으로 관리하게 합니다.
-
-`스펙:` Agent Skills / SKILL.md | `라이선스:` MIT | `에이전트:` Codex, ChatGPT, Agent Skills 호환 도구
+긴 작업이 큰 로그, 반복 읽기와 브라우저 출력에 파묻혀 느려지거나 맥락을 잃는 일을 줄입니다. 필요한 증거만 좁게 읽고, 작업 단계가 바뀔 때 현재 상태를 짧게 남겨 중요한 판단과 실제 요청에 컨텍스트를 쓰게 합니다.
 
 ## 빠른 시작
 
@@ -23,7 +19,7 @@ npx skills add perhapsspy/codex-token-discipline
 **바로 사용**
 
 ```text
-$codex-token-discipline 을 사용해서 이 긴 Codex 작업을 summary-first read, bounded subagent, compact resume surface 중심으로 진행해줘
+$codex-token-discipline 이 긴 작업에서 필요한 파일과 로그만 좁게 읽고 다음 단계에 필요한 상태를 짧게 남겨줘.
 ```
 
 ## 이런 때 사용

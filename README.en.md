@@ -4,11 +4,7 @@
 
 ## Summary
 
-`codex-token-discipline` helps long Codex work avoid context growth from noisy reads, large outputs, repeated browser loops, broad subagent delegation, and oversized always-read instructions.
-
-It does not force terse final answers. It keeps intermediate work disciplined through summary-first reads, bounded delegation, compact resume state, and phase-boundary resets.
-
-`Spec:` Agent Skills / SKILL.md | `License:` MIT | `Agents:` Codex, ChatGPT, and Agent Skills-compatible tools
+`codex-token-discipline` keeps long work from slowing down or losing focus under large logs, repeated reads, and browser output. It narrows evidence gathering and leaves a compact state when the work changes phase, preserving context for the decisions that matter.
 
 ## Quick Start
 
@@ -23,7 +19,7 @@ Or copy `skills/codex-token-discipline` directly into an agent skill directory.
 **Use**
 
 ```text
-Use $codex-token-discipline to keep this long Codex task efficient with summary-first reads, bounded subagents, and a compact resume surface.
+Use $codex-token-discipline to read only the files and logs this long task needs and leave a compact state for the next phase.
 ```
 
 ## Use When
