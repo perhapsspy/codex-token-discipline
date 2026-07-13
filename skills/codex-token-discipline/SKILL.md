@@ -75,7 +75,7 @@ When editing an always-read file, prefer a short routing rule over procedure tex
 
 ## Usage Audit
 
-When asked where tokens went, run `scripts/summarize_codex_usage.py --help`, then audit with an explicit `--cwd-prefix`.
+When asked where tokens went, resolve `scripts/summarize_codex_usage.py` relative to this installed skill directory, run it with `--help`, then audit with an explicit `--cwd-prefix`.
 
 The script groups Codex rollout logs by root thread and reports token totals, tool-output size, large-output events, browser/image, DOM/body, broad-search, and top-output-tool signals without raw payloads.
 
