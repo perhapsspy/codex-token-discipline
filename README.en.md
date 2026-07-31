@@ -4,7 +4,7 @@
 
 ## Summary
 
-`codex-token-discipline` keeps long work from slowing down or losing focus under large logs, repeated reads, and browser output. It narrows evidence gathering and leaves a compact state when the work changes phase, preserving context for the decisions that matter.
+`codex-token-discipline` reduces root-and-child cost from large logs, repeated reads, and unnecessary delegation. It narrows and reuses evidence and leaves compact state when work changes phase.
 
 ## Quick Start
 
@@ -26,7 +26,7 @@ Use $codex-token-discipline to read only the files and logs this long task needs
 
 - Broad repository exploration, large diffs, logs, or test output are about to enter the thread.
 - Browser or UI pixel debugging loops are growing.
-- Subagents should help without returning raw transcript noise to the main thread.
+- Subagent cost and duplicated work need explicit bounds.
 - A long task crosses a phase boundary and needs a refreshed resume surface such as `BRIEF.md`.
 - Always-read or always-available surfaces such as AGENTS files, skills, MCP, or memory are expanding.
 - You want to audit recent Codex session token usage from local rollout logs.

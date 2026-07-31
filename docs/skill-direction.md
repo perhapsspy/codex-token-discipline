@@ -2,15 +2,19 @@
 
 ## Purpose
 
-`codex-token-discipline` keeps Codex work from spending context on avoidable intermediate noise.
+`codex-token-discipline` reduces total root-and-child cost from avoidable intermediate work.
 
-It should help agents decide how to read, delegate, checkpoint, and audit work while preserving the user's requested outcome.
+It should help agents decide how to read, delegate, checkpoint, and audit work while preserving task success, required evidence, and the user's requested outcome.
+
+Keep implicit invocation enabled so prevention can act before excess output or delegation enters the thread. Keep the metadata trigger narrow enough to skip routine work.
 
 ## Keep
 
 - Summary-first reads before full files, diffs, logs, screenshots, or test transcripts.
-- Bounded read-only subagents for noisy exploration.
-- Compact phase-boundary resume state, especially `BRIEF.md` in repos that use `project-context`.
+- A preflight output contract for unpredictable or batch tool calls: smallest useful return shape, finite budget, and source-side reduction.
+- Artifact-plus-summary handling when full output is worth preserving, with bounded follow-up reads from the artifact.
+- One bounded named agent by default, with parallel work limited to independent, non-overlapping scopes.
+- Compact phase-boundary resume state, especially `BRIEF.md` in repos that use `project-context`, while a coordinating director owns continue, handoff, and session-rotation decisions.
 - Clear routing from always-read files to skills and repo docs.
 - A deterministic local usage-audit script when the user asks where tokens went.
 
@@ -20,6 +24,9 @@ It should help agents decide how to read, delegate, checkpoint, and audit work w
 - Repeating `project-context`, `agents-md-editor`, or browser hygiene contracts.
 - Adding Codex-internal claims that are not observable from current local logs or official docs.
 - Making every task run a token ritual.
+- Treating cleaner main-thread context as a cost win by itself.
+- Waiting for a single large-output threshold or summarizing only after noisy output has already entered the main context.
+- Owning session rotation inside the skill when a director coordinates the long-running workflow.
 - Keeping large examples in the shipped skill body.
 
 ## Evolution

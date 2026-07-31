@@ -4,7 +4,7 @@
 
 ## 요약
 
-긴 작업이 큰 로그, 반복 읽기와 브라우저 출력에 파묻혀 느려지거나 맥락을 잃는 일을 줄입니다. 필요한 증거만 좁게 읽고, 작업 단계가 바뀔 때 현재 상태를 짧게 남겨 중요한 판단과 실제 요청에 컨텍스트를 쓰게 합니다.
+긴 작업의 root와 child가 큰 로그, 반복 읽기와 불필요한 위임에 비용을 쓰는 일을 줄입니다. 필요한 증거만 좁게 읽고 재사용하며, 작업 단계가 바뀔 때 현재 상태를 짧게 남깁니다.
 
 ## 빠른 시작
 
@@ -26,7 +26,7 @@ $codex-token-discipline 이 긴 작업에서 필요한 파일과 로그만 좁�
 
 - repo를 넓게 탐색하거나 큰 diff/log/test output을 읽기 시작할 때
 - 브라우저나 UI 픽셀 디버깅 루프가 길어질 때
-- 여러 subagent를 쓰되 main thread를 noisy transcript로 채우고 싶지 않을 때
+- subagent의 총비용과 중복 작업을 제한해야 할 때
 - 긴 작업의 phase가 바뀌어 `BRIEF.md` 같은 resume surface를 갱신해야 할 때
 - AGENTS, skills, MCP, memory 같은 always-read/always-available 표면을 늘리기 전에 비용을 따져야 할 때
 - Codex 세션 로그에서 최근 토큰 사용 패턴을 감사하고 싶을 때
