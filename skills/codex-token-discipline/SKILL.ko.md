@@ -86,7 +86,7 @@ always-read 파일을 고칠 때는 절차보다 짧은 routing rule을 선호�
 
 사용자가 토큰이 어디에 쓰였는지 물으면 이 스킬이 설치된 디렉터리를 기준으로 `scripts/summarize_codex_usage.py` 경로를 찾고 `--help`를 본 뒤, 명시적 `--cwd-prefix`로 감사한다.
 
-스크립트는 Codex rollout log를 root thread로 묶어 token total, tool-output size, large-output event, browser/image, DOM/body, broad search, top output tool 신호를 보여준다. raw payload는 출력하지 않는다.
+스크립트는 Codex rollout log를 root thread로 묶어 token total, cached-input rate, child-session token share, tool-output size, large-output event, browser/image, DOM/body, broad search, top output tool 신호를 보여준다. raw payload는 출력하지 않는다.
 
 토큰 총량은 품질 기준이 아니라 신호로 본다. 홈 전체 텍스트 검색은 피하고, `$CODEX_HOME/sessions` 같은 명시적 sessions root를 지정한다.
 

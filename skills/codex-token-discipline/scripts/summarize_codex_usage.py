@@ -220,6 +220,16 @@ def format_average(total: int, count: int) -> str:
     return format_tokens(total // count if count else 0)
 
 
+def format_percentage(numerator: int, denominator: int) -> str:
+    return f"{numerator / denominator:.1%}" if denominator else "n/a"
+
+
+def add_child_usage(total: Counter[str], session: Session) -> None:
+    if session.parent:
+        total["children"] += 1
+        total["child_total"] += session.usage.get("total_tokens", 0)
+
+
 def format_top_outputs(
     output_by_tool: Counter[str], output_results_by_tool: Counter[str], limit: int = 3
 ) -> str:
@@ -262,6 +272,7 @@ def main() -> int:
         totals["output_chars"] += session.output_chars
         totals["max_output_chars"] = max(totals["max_output_chars"], session.max_output_chars)
         totals.update(session.metrics)
+        add_child_usage(totals, session)
         clusters[root_id(sid, sessions)].append(session)
 
     print(f"Codex token usage since {since.date()} for {cwd_prefix}")
@@ -269,10 +280,13 @@ def main() -> int:
     print("By repo:")
     for repo, totals in sorted(repo_totals.items(), key=lambda item: item[1]["total"], reverse=True):
         uncached = totals["input"] - totals["cached"]
+        cache_rate = format_percentage(totals["cached"], totals["input"])
+        child_share = format_percentage(totals["child_total"], totals["total"])
         print(
             f"- {repo}: total={format_tokens(totals['total'])} "
-            f"uncached={format_tokens(uncached)} output={format_tokens(totals['output'])} "
-            f"sessions={totals['sessions']} calls={totals['calls']} output_results={totals['output_results']} "
+            f"uncached={format_tokens(uncached)} cache_rate={cache_rate} output={format_tokens(totals['output'])} "
+            f"sessions={totals['sessions']} children={totals['children']} child_share={child_share} "
+            f"calls={totals['calls']} output_results={totals['output_results']} "
             f"output_chars={format_tokens(totals['output_chars'])} avg_output_chars={format_average(totals['output_chars'], totals['output_results'])} "
             f"max_output_chars={format_tokens(totals['max_output_chars'])} large_outputs={totals['output_50k'] + totals['output_100k'] + totals['output_500k']} "
             f"browser_image={totals['browser_image']} dom_dump={totals['dom_or_body_dump']} spawn={totals['spawn']}"
@@ -294,6 +308,7 @@ def main() -> int:
             totals["output_chars"] += session.output_chars
             totals["max_output_chars"] = max(totals["max_output_chars"], session.max_output_chars)
             metrics.update(session.metrics)
+            add_child_usage(totals, session)
             output_by_tool.update(session.output_by_tool)
             output_results_by_tool.update(session.output_results_by_tool)
             repos[session.cwd.removeprefix(cwd_prefix).strip("/").split("/", 1)[0] or Path(cwd_prefix).name] += 1
@@ -304,10 +319,13 @@ def main() -> int:
     for _, root, members, totals, metrics, output_by_tool, output_results_by_tool, repos in sorted(cluster_rows, reverse=True)[: args.top]:
         root_session = sessions.get(root) or members[0]
         uncached = totals["input"] - totals["cached"]
+        cache_rate = format_percentage(totals["cached"], totals["input"])
+        child_share = format_percentage(totals["child_total"], totals["total"])
         top_outputs = format_top_outputs(output_by_tool, output_results_by_tool)
         print(
             f"- {root_session.timestamp} {root}: repos={dict(repos)} sessions={totals['sessions']} "
-            f"total={format_tokens(totals['total'])} uncached={format_tokens(uncached)} "
+            f"children={totals['children']} total={format_tokens(totals['total'])} "
+            f"uncached={format_tokens(uncached)} cache_rate={cache_rate} child_share={child_share} "
             f"output={format_tokens(totals['output'])} calls={totals['calls']} output_results={totals['output_results']} "
             f"output_chars={format_tokens(totals['output_chars'])} avg_output_chars={format_average(totals['output_chars'], totals['output_results'])} "
             f"max_output_chars={format_tokens(totals['max_output_chars'])} large_outputs={metrics['output_50k'] + metrics['output_100k'] + metrics['output_500k']} "

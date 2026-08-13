@@ -1,10 +1,13 @@
 import importlib.util
+import io
 import json
 import sys
 import tempfile
 import unittest
 from collections import Counter
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPT = (
@@ -95,6 +98,111 @@ class SummarizeCodexUsageTest(unittest.TestCase):
             formatted,
             "exec_command:chars=16,000,results=2,avg=8,000;unknown:chars=12,results=1,avg=12",
         )
+
+    def test_format_percentage_reports_ratio_and_handles_zero_denominator(self):
+        self.assertEqual(MODULE.format_percentage(95, 100), "95.0%")
+        self.assertEqual(MODULE.format_percentage(0, 0), "n/a")
+
+    def test_add_child_usage_counts_only_sessions_with_a_parent(self):
+        totals = Counter()
+        root = MODULE.Session(
+            id="root",
+            path=Path("root.jsonl"),
+            cwd="/workspace/repo",
+            timestamp="2026-08-13T00:00:00Z",
+            parent=None,
+            usage={"total_tokens": 80},
+        )
+        child = MODULE.Session(
+            id="child",
+            path=Path("child.jsonl"),
+            cwd="/workspace/repo",
+            timestamp="2026-08-13T00:01:00Z",
+            parent="root",
+            usage={"total_tokens": 20},
+        )
+
+        MODULE.add_child_usage(totals, root)
+        MODULE.add_child_usage(totals, child)
+
+        self.assertEqual(totals["children"], 1)
+        self.assertEqual(totals["child_total"], 20)
+
+    def test_main_reports_cache_rate_and_child_share_by_repo_and_cluster(self):
+        root_rows = [
+            {
+                "type": "session_meta",
+                "payload": {
+                    "id": "root",
+                    "cwd": "/workspace/repo",
+                    "timestamp": "2026-08-13T00:00:00Z",
+                },
+            },
+            {
+                "type": "event_msg",
+                "payload": {
+                    "type": "token_count",
+                    "info": {
+                        "total_token_usage": {
+                            "total_tokens": 100,
+                            "input_tokens": 80,
+                            "cached_input_tokens": 60,
+                            "output_tokens": 20,
+                        }
+                    },
+                },
+            },
+        ]
+        child_rows = [
+            {
+                "type": "session_meta",
+                "payload": {
+                    "id": "child",
+                    "cwd": "/workspace/repo",
+                    "timestamp": "2026-08-13T00:01:00Z",
+                    "forked_from_id": "root",
+                },
+            },
+            {
+                "type": "event_msg",
+                "payload": {
+                    "type": "token_count",
+                    "info": {
+                        "total_token_usage": {
+                            "total_tokens": 50,
+                            "input_tokens": 40,
+                            "cached_input_tokens": 30,
+                            "output_tokens": 10,
+                        }
+                    },
+                },
+            },
+        ]
+
+        with tempfile.TemporaryDirectory() as directory:
+            sessions_root = Path(directory)
+            (sessions_root / "rollout-root.jsonl").write_text(
+                "\n".join(json.dumps(row) for row in root_rows)
+            )
+            (sessions_root / "rollout-child.jsonl").write_text(
+                "\n".join(json.dumps(row) for row in child_rows)
+            )
+            output = io.StringIO()
+            argv = [
+                "summarize_codex_usage.py",
+                "--sessions-root",
+                str(sessions_root),
+                "--cwd-prefix",
+                "/workspace",
+            ]
+
+            with mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+                self.assertEqual(MODULE.main(), 0)
+
+        report = output.getvalue()
+        self.assertEqual(report.count("cache_rate=75.0%"), 2)
+        self.assertEqual(report.count("children=1"), 2)
+        self.assertEqual(report.count("child_share=33.3%"), 2)
 
     def test_exec_pragma_large_budget_is_counted(self):
         metrics = Counter()
