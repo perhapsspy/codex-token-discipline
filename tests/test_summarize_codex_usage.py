@@ -51,6 +51,14 @@ class SummarizeCodexUsageTest(unittest.TestCase):
                 },
             },
             {
+                "type": "session_meta",
+                "payload": {
+                    "id": "later-meta",
+                    "cwd": "/different/workspace",
+                    "timestamp": "2026-07-24T01:00:00Z",
+                },
+            },
+            {
                 "type": "response_item",
                 "payload": {
                     "type": "function_call",
@@ -82,11 +90,12 @@ class SummarizeCodexUsageTest(unittest.TestCase):
             session = MODULE.parse_session(rollout)
 
         self.assertIsNotNone(session)
+        self.assertEqual(session.id, "session-1")
         self.assertEqual(session.output_results, 2)
         self.assertEqual(session.output_chars, 50_014)
         self.assertEqual(session.output_results_by_tool["exec_command"], 1)
         self.assertEqual(session.output_results_by_tool["unknown"], 1)
-        self.assertEqual(session.metrics["output_50k"], 1)
+        self.assertEqual(session.large_outputs, 1)
 
     def test_format_top_outputs_reports_chars_result_count_and_average(self):
         formatted = MODULE.format_top_outputs(
@@ -204,14 +213,22 @@ class SummarizeCodexUsageTest(unittest.TestCase):
         self.assertEqual(report.count("children=1"), 2)
         self.assertEqual(report.count("child_share=33.3%"), 2)
 
-    def test_exec_pragma_large_budget_is_counted(self):
-        metrics = Counter()
+    def test_relative_cwd_respects_directory_boundaries(self):
+        prefix = Path("/workspace/repo")
 
-        MODULE.collect_call_metrics(
-            "exec", '// @exec: {"yield_time_ms": 10000, "max_output_tokens": 20000}', metrics
+        self.assertEqual(
+            MODULE.relative_cwd("/workspace/repo/child", prefix), Path("child")
         )
+        self.assertIsNone(MODULE.relative_cwd("/workspace/repo2", prefix))
 
-        self.assertEqual(metrics["large_output_budget"], 1)
+    def test_root_id_follows_ancestors_outside_the_selected_prefix(self):
+        parents = {
+            "child": "outside-parent",
+            "outside-parent": "outside-root",
+            "outside-root": None,
+        }
+
+        self.assertEqual(MODULE.root_id("child", parents), "outside-root")
 
 
 if __name__ == "__main__":

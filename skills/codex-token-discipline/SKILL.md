@@ -89,7 +89,7 @@ When editing an always-read file, prefer a short routing rule over procedure tex
 
 When asked where tokens went, resolve `scripts/summarize_codex_usage.py` relative to this installed skill directory, run it with `--help`, then audit with an explicit `--cwd-prefix`.
 
-The script groups Codex rollout logs by root thread and reports token totals, cached-input rate, child-session token share, tool-output size, large-output events, browser/image, DOM/body, broad-search, and top-output-tool signals without raw payloads.
+The script groups Codex rollout logs by root thread and reports token totals, cached-input rate, child-session token share, tool-output volume, large-output events, and top-output-tool signals without raw payloads.
 
 Treat token totals as signals, not quality. Avoid home-wide text searches; point the script at `$CODEX_HOME/sessions` or another explicit sessions root.
 
