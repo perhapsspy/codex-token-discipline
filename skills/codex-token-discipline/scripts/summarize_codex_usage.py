@@ -88,7 +88,11 @@ def parse_session(path: Path, meta: dict | None = None) -> Session | None:
     meta = meta or read_session_meta(path)
     if not meta:
         return None
+    current_id = meta.get("id") or path.stem
+    forked = parent_id(meta) is not None
     usage = None
+    baseline_usage = None
+    waiting_for_child_start = False
     calls = 0
     output_results = 0
     output_chars = 0
@@ -111,9 +115,35 @@ def parse_session(path: Path, meta: dict | None = None) -> Session | None:
                 continue
             payload = obj.get("payload") or {}
             if obj.get("type") == "session_meta":
+                if forked and payload.get("id") not in {None, current_id}:
+                    # Fork rollouts replay ancestor history before the child's
+                    # task_started event. Reset any provisional counts at each
+                    # ancestor boundary so nested forks keep only child work.
+                    usage = None
+                    baseline_usage = None
+                    waiting_for_child_start = True
+                    calls = 0
+                    output_results = 0
+                    output_chars = 0
+                    max_output_chars = 0
+                    large_outputs = 0
+                    output_by_tool.clear()
+                    output_results_by_tool.clear()
+                    calls_by_id.clear()
                 continue
             if obj.get("type") == "event_msg" and payload.get("type") == "token_count":
-                usage = (payload.get("info") or {}).get("total_token_usage") or usage
+                latest_usage = (payload.get("info") or {}).get("total_token_usage")
+                if waiting_for_child_start:
+                    baseline_usage = latest_usage or baseline_usage
+                else:
+                    usage = latest_usage or usage
+                continue
+            if obj.get("type") == "event_msg" and payload.get("type") == "task_started":
+                if waiting_for_child_start:
+                    usage = baseline_usage
+                    waiting_for_child_start = False
+                continue
+            if waiting_for_child_start:
                 continue
             if obj.get("type") != "response_item":
                 continue
@@ -137,13 +167,29 @@ def parse_session(path: Path, meta: dict | None = None) -> Session | None:
     if not usage:
         return None
 
+    usage_keys = (
+        "total_tokens",
+        "input_tokens",
+        "cached_input_tokens",
+        "output_tokens",
+        "reasoning_output_tokens",
+    )
+    exclusive_usage = {
+        key: max(
+            0,
+            int(usage.get(key, 0) or 0)
+            - int((baseline_usage or {}).get(key, 0) or 0),
+        )
+        for key in usage_keys
+    }
+
     return Session(
-        id=meta.get("id") or path.stem,
+        id=current_id,
         path=path,
         cwd=meta.get("cwd") or "",
         timestamp=meta.get("timestamp") or "",
         parent=parent_id(meta),
-        usage={key: int(usage.get(key, 0) or 0) for key in ("total_tokens", "input_tokens", "cached_input_tokens", "output_tokens", "reasoning_output_tokens")},
+        usage=exclusive_usage,
         calls=calls,
         output_results=output_results,
         output_chars=output_chars,

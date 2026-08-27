@@ -97,6 +97,93 @@ class SummarizeCodexUsageTest(unittest.TestCase):
         self.assertEqual(session.output_results_by_tool["unknown"], 1)
         self.assertEqual(session.large_outputs, 1)
 
+    def test_parse_session_excludes_replayed_history_from_a_fork(self):
+        rows = [
+            {
+                "type": "session_meta",
+                "payload": {
+                    "id": "child",
+                    "cwd": "/workspace/repo",
+                    "timestamp": "2026-08-20T07:49:49Z",
+                    "forked_from_id": "parent",
+                },
+            },
+            {
+                "type": "event_msg",
+                "payload": {
+                    "type": "token_count",
+                    "info": {"total_token_usage": {"total_tokens": 90}},
+                },
+            },
+            {
+                "type": "session_meta",
+                "payload": {"id": "ancestor", "cwd": "/workspace/repo"},
+            },
+            {
+                "type": "response_item",
+                "payload": {
+                    "type": "function_call",
+                    "name": "inherited_tool",
+                    "call_id": "inherited-call",
+                },
+            },
+            {
+                "type": "event_msg",
+                "payload": {
+                    "type": "token_count",
+                    "info": {"total_token_usage": {"total_tokens": 100}},
+                },
+            },
+            {
+                "type": "session_meta",
+                "payload": {"id": "parent", "cwd": "/workspace/repo"},
+            },
+            {
+                "type": "event_msg",
+                "payload": {
+                    "type": "token_count",
+                    "info": {"total_token_usage": {"total_tokens": 120}},
+                },
+            },
+            {"type": "event_msg", "payload": {"type": "task_started"}},
+            {
+                "type": "response_item",
+                "payload": {
+                    "type": "function_call",
+                    "name": "own_tool",
+                    "call_id": "own-call",
+                },
+            },
+            {
+                "type": "response_item",
+                "payload": {
+                    "type": "function_call_output",
+                    "call_id": "own-call",
+                    "output": "own-output",
+                },
+            },
+            {
+                "type": "event_msg",
+                "payload": {
+                    "type": "token_count",
+                    "info": {"total_token_usage": {"total_tokens": 170}},
+                },
+            },
+        ]
+
+        with tempfile.TemporaryDirectory() as directory:
+            rollout = Path(directory) / "rollout-child.jsonl"
+            rollout.write_text("\n".join(json.dumps(row) for row in rows))
+            session = MODULE.parse_session(rollout)
+
+        self.assertIsNotNone(session)
+        self.assertEqual(session.id, "child")
+        self.assertEqual(session.usage["total_tokens"], 50)
+        self.assertEqual(session.calls, 1)
+        self.assertEqual(session.output_results, 1)
+        self.assertEqual(session.output_results_by_tool["own_tool"], 1)
+        self.assertEqual(session.output_results_by_tool["inherited_tool"], 0)
+
     def test_format_top_outputs_reports_chars_result_count_and_average(self):
         formatted = MODULE.format_top_outputs(
             Counter({"exec_command": 16_000, "unknown": 12}),
