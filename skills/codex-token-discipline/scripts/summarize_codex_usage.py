@@ -49,6 +49,8 @@ def iter_rollouts(root: Path, since: datetime) -> Iterable[Path]:
 
 
 def relative_cwd(path: str, prefix: Path) -> Path | None:
+    if not path:
+        return None
     try:
         return Path(path).expanduser().resolve().relative_to(prefix)
     except ValueError:

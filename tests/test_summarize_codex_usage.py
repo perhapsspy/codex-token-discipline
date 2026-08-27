@@ -220,6 +220,7 @@ class SummarizeCodexUsageTest(unittest.TestCase):
             MODULE.relative_cwd("/workspace/repo/child", prefix), Path("child")
         )
         self.assertIsNone(MODULE.relative_cwd("/workspace/repo2", prefix))
+        self.assertIsNone(MODULE.relative_cwd("", prefix))
 
     def test_root_id_follows_ancestors_outside_the_selected_prefix(self):
         parents = {
