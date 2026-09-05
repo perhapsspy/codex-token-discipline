@@ -25,6 +25,7 @@ $codex-token-discipline 이 긴 작업에서 필요한 파일과 로그만 좁�
 ## 이런 때 사용
 
 - repo를 넓게 탐색하거나 큰 diff/log/test output을 읽기 시작할 때
+- 출력이 작아도 실행·재시도 비용이 커서 이전 결과로 다음 실행이나 진행 관측을 선택해야 할 때
 - 브라우저나 UI 픽셀 디버깅 루프가 길어질 때
 - subagent의 총비용과 중복 작업을 제한해야 할 때
 - 긴 작업의 phase가 바뀌어 `BRIEF.md` 같은 resume surface를 갱신해야 할 때

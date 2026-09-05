@@ -1,6 +1,6 @@
 ---
 name: codex-token-discipline
-description: "Use for Codex work with clear excess-cost risk: broad or unpredictable logs and diffs, browser/UI loops, subagents, repeated compaction, or explicit usage audits. Guides preflight output limits, bounded delegation, evidence reuse, and compact checkpoints. Skip routine edits, direct answers, and ordinary test runs."
+description: "Use for Codex work with clear excess-cost risk: broad or unpredictable logs and diffs, browser/UI loops, costly execution/retry loops and progress observation even with small output, subagents, repeated compaction, or explicit usage audits. Guides bounded execution and observation, preflight output limits, bounded delegation, evidence reuse, and compact checkpoints. Skip routine edits and direct answers. Routine test runs alone are not a trigger."
 ---
 
 # Codex Token Discipline
@@ -22,6 +22,12 @@ Use only what changes behavior:
 5. At phase boundaries, save compact resume state and hand session-continuation decisions to the owning director when one exists.
 
 Skip the ritual for small edits, direct answers, and simple commands.
+
+## Execution And Observation
+
+Use prior results to choose the next bounded execution or observation, grounded in a relevant condition change or a concrete reason to repeat unchanged. Normal progress cut short by a budget, outstanding required verification, or a specific transient/nondeterministic hypothesis may justify the choice. A completed deterministic failure calls for addressing its cause before repeating the same check.
+
+Prefer an available progress observation to further waiting when it can inform a known, time-sensitive decision. Reuse still-valid evidence; these choices require no separate report or log.
 
 ## Preflight Output Contract
 

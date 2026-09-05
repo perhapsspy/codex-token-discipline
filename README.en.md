@@ -25,6 +25,7 @@ Use $codex-token-discipline to read only the files and logs this long task needs
 ## Use When
 
 - Broad repository exploration, large diffs, logs, or test output are about to enter the thread.
+- Execution or retry loops are costly even with small output, and prior results should guide the next execution or progress observation.
 - Browser or UI pixel debugging loops are growing.
 - Subagent cost and duplicated work need explicit bounds.
 - A long task crosses a phase boundary and needs a refreshed resume surface such as `BRIEF.md`.

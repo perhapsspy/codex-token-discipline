@@ -4,9 +4,9 @@
 
 `codex-token-discipline` reduces total root-and-child cost from avoidable intermediate work.
 
-It should help agents decide how to read, delegate, checkpoint, and audit work while preserving task success, required evidence, and the user's requested outcome.
+It should help agents decide how to choose bounded execution and observation, read, delegate, checkpoint, and audit work while preserving task success, required evidence, and the user's requested outcome.
 
-Keep implicit invocation enabled so prevention can act before excess output or delegation enters the thread. Keep the metadata trigger narrow enough to skip routine work.
+Keep implicit invocation enabled so prevention can act before costly execution, excess output, or delegation accumulates. Keep the metadata trigger narrow enough to skip routine work.
 
 ## Keep
 
