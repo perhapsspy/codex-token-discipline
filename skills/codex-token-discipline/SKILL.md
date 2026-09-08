@@ -29,6 +29,8 @@ Use prior results to choose the next bounded execution or observation, grounded 
 
 Prefer an available progress observation to further waiting when it can inform a known, time-sensitive decision. Reuse still-valid evidence; these choices require no separate report or log.
 
+Use existing tools or the current executor for routine status collection and comparison where supported. Preserve required progress reports; updates do not transfer execution ownership to the parent. Surface completion, unresolved blockers, and changes requiring a decision about scope, acceptance, authority, or risk. Add a separate observer only when it has an independently useful responsibility.
+
 ## Preflight Output Contract
 
 Prevent excess output before it enters the main context; do not rely on summarizing it afterward.
