@@ -36,6 +36,7 @@ class SummarizeCodexUsageTest(unittest.TestCase):
                 },
             },
             {
+                "timestamp": "2026-08-13T00:00:10Z",
                 "type": "event_msg",
                 "payload": {
                     "type": "token_count",
@@ -109,6 +110,7 @@ class SummarizeCodexUsageTest(unittest.TestCase):
                 },
             },
             {
+                "timestamp": "2026-08-13T00:01:10Z",
                 "type": "event_msg",
                 "payload": {
                     "type": "token_count",
@@ -138,6 +140,14 @@ class SummarizeCodexUsageTest(unittest.TestCase):
                 "type": "session_meta",
                 "payload": {"id": "parent", "cwd": "/workspace/repo"},
             },
+            {
+                "type": "event_msg",
+                "payload": {
+                    "type": "token_count",
+                    "info": {"total_token_usage": {"total_tokens": 120}},
+                },
+            },
+            {"type": "event_msg", "payload": {"type": "thread_settings_applied", "thread_id": "child"}},
             {
                 "type": "event_msg",
                 "payload": {
@@ -235,6 +245,7 @@ class SummarizeCodexUsageTest(unittest.TestCase):
                 },
             },
             {
+                "timestamp": "2026-08-13T00:00:10Z",
                 "type": "event_msg",
                 "payload": {
                     "type": "token_count",
@@ -260,6 +271,7 @@ class SummarizeCodexUsageTest(unittest.TestCase):
                 },
             },
             {
+                "timestamp": "2026-08-13T00:01:10Z",
                 "type": "event_msg",
                 "payload": {
                     "type": "token_count",
@@ -290,6 +302,10 @@ class SummarizeCodexUsageTest(unittest.TestCase):
                 str(sessions_root),
                 "--cwd-prefix",
                 "/workspace",
+                "--since",
+                "2026-08-13T00:00:00Z",
+                "--until",
+                "2026-08-14T00:00:00Z",
             ]
 
             with mock.patch.object(sys, "argv", argv), redirect_stdout(output):
@@ -299,6 +315,13 @@ class SummarizeCodexUsageTest(unittest.TestCase):
         self.assertEqual(report.count("cache_rate=75.0%"), 2)
         self.assertEqual(report.count("children=1"), 2)
         self.assertEqual(report.count("child_share=33.3%"), 2)
+        self.assertEqual(
+            report.count("avg_output_chars=0 max_output_chars=0 large_outputs=0"), 2
+        )
+        self.assertIn(
+            "model_effort=unknown/unknown:root(input=80,cached=60,output=20);child(input=40,cached=30,output=10)",
+            report,
+        )
 
     def test_relative_cwd_respects_directory_boundaries(self):
         prefix = Path("/workspace/repo")
@@ -317,6 +340,85 @@ class SummarizeCodexUsageTest(unittest.TestCase):
         }
 
         self.assertEqual(MODULE.root_id("child", parents), "outside-root")
+
+    def test_parse_session_uses_event_deltas_and_turn_context(self):
+        rows = [
+            {"type": "session_meta", "payload": {"id": "root", "cwd": "/workspace/repo"}},
+            {"timestamp": "2026-09-01T00:00:00Z", "type": "turn_context", "payload": {"model": "one", "effort": "low"}},
+            {"timestamp": "2026-09-01T00:00:01Z", "type": "event_msg", "payload": {"type": "token_count", "info": {"total_token_usage": {"total_tokens": 100, "input_tokens": 80, "cached_input_tokens": 40, "output_tokens": 20}}}},
+            {"timestamp": "2026-09-01T00:00:02Z", "type": "turn_context", "payload": {"model": "two", "effort": "high"}},
+            {"timestamp": "2026-09-01T00:00:03Z", "type": "event_msg", "payload": {"type": "token_count", "info": {"total_token_usage": {"total_tokens": 100, "input_tokens": 80, "cached_input_tokens": 40, "output_tokens": 20}}}},
+            {"timestamp": "2026-09-01T00:00:04Z", "type": "event_msg", "payload": {"type": "token_count", "info": {"total_token_usage": {"total_tokens": 130, "input_tokens": 100, "cached_input_tokens": 50, "output_tokens": 30}}}},
+            {"timestamp": "2026-09-01T00:00:04.500Z", "type": "event_msg", "payload": {"type": "token_count", "info": None}},
+            {"timestamp": "2026-09-01T00:00:04.750Z", "type": "event_msg", "payload": {"type": "token_count", "info": {"total_token_usage": {}}}},
+            {"timestamp": "2026-09-01T00:00:05Z", "type": "turn_context", "payload": {"model": "three", "effort": "medium"}},
+            {"timestamp": "2026-09-01T00:00:06Z", "type": "event_msg", "payload": {"type": "token_count", "info": {"total_token_usage": {"total_tokens": 5, "input_tokens": 4, "cached_input_tokens": 1, "output_tokens": 1}}}},
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            rollout = Path(directory) / "rollout-root.jsonl"
+            rollout.write_text("\n".join(json.dumps(row) for row in rows))
+            session = MODULE.parse_session(rollout, since=MODULE.parse_time("2026-09-01T00:00:02Z"), until=MODULE.parse_time("2026-09-01T00:00:07Z"))
+        self.assertEqual(session.usage["total_tokens"], 35)
+        self.assertEqual(session.model_usage[("two", "high")]["total_tokens"], 30)
+        self.assertEqual(session.model_usage[("three", "medium")]["total_tokens"], 5)
+
+    def test_parse_session_filters_tool_events_by_the_same_window(self):
+        rows = [
+            {"type": "session_meta", "payload": {"id": "root", "cwd": "/workspace/repo"}},
+            {"timestamp": "2026-09-01T00:00:01Z", "type": "response_item", "payload": {"type": "function_call", "name": "exec", "call_id": "before"}},
+            {"timestamp": "2026-09-01T00:00:02Z", "type": "response_item", "payload": {"type": "function_call_output", "call_id": "before", "output": "included"}},
+            {"timestamp": "2026-09-01T00:00:03Z", "type": "response_item", "payload": {"type": "function_call", "name": "exec", "call_id": "after"}},
+            {"timestamp": "2026-09-01T00:00:04Z", "type": "response_item", "payload": {"type": "function_call_output", "call_id": "after", "output": "excluded"}},
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            rollout = Path(directory) / "rollout-root.jsonl"
+            rollout.write_text("\n".join(json.dumps(row) for row in rows))
+            session = MODULE.parse_session(rollout, since=MODULE.parse_time("2026-09-01T00:00:02Z"), until=MODULE.parse_time("2026-09-01T00:00:03Z"))
+        self.assertEqual(session.calls, 0)
+        self.assertEqual(session.output_results, 1)
+        self.assertEqual(session.output_results_by_tool["exec"], 1)
+
+    def test_parse_session_excludes_nested_fork_replay_until_last_ancestor_finishes(self):
+        rows = [
+            {"type": "session_meta", "payload": {"id": "child", "cwd": "/workspace/repo", "forked_from_id": "parent"}},
+            {"type": "session_meta", "payload": {"id": "ancestor", "cwd": "/workspace/repo"}},
+            {"type": "event_msg", "payload": {"type": "token_count", "info": {"total_token_usage": {"total_tokens": 90}}}},
+            {"type": "event_msg", "payload": {"type": "task_started"}},
+            {"type": "response_item", "payload": {"type": "function_call", "name": "ancestor_tool", "call_id": "ancestor"}},
+            {"type": "session_meta", "payload": {"id": "parent", "cwd": "/workspace/repo"}},
+            {"type": "event_msg", "payload": {"type": "token_count", "info": {"total_token_usage": {"total_tokens": 120}}}},
+            {"type": "event_msg", "payload": {"type": "task_started"}},
+            {"type": "response_item", "payload": {"type": "function_call", "name": "parent_tool", "call_id": "parent"}},
+            {"type": "event_msg", "payload": {"type": "thread_settings_applied", "thread_id": "child"}},
+            {"type": "event_msg", "payload": {"type": "token_count", "info": {"total_token_usage": {"total_tokens": 120}}}},
+            {"type": "event_msg", "payload": {"type": "task_started"}},
+            {"type": "response_item", "payload": {"type": "function_call", "name": "child_tool", "call_id": "child"}},
+            {"type": "response_item", "payload": {"type": "function_call_output", "call_id": "child", "output": "own"}},
+            {"type": "event_msg", "payload": {"type": "token_count", "info": {"total_token_usage": {"total_tokens": 130}}}},
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            rollout = Path(directory) / "rollout-child.jsonl"
+            rollout.write_text("\n".join(json.dumps(row) for row in rows))
+            session = MODULE.parse_session(rollout)
+        self.assertEqual(session.usage["total_tokens"], 10)
+        self.assertEqual(session.calls, 1)
+        self.assertEqual(session.output_results_by_tool["child_tool"], 1)
+        self.assertEqual(session.output_results_by_tool["ancestor_tool"], 0)
+
+    def test_parse_session_marks_a_fork_without_child_settings_as_unknown(self):
+        rows = [
+            {"type": "session_meta", "payload": {"id": "child", "cwd": "/workspace/repo", "forked_from_id": "parent"}},
+            {"type": "session_meta", "payload": {"id": "parent", "cwd": "/workspace/repo"}},
+            {"type": "event_msg", "payload": {"type": "token_count", "info": {"total_token_usage": {"total_tokens": 100}}}},
+            {"type": "event_msg", "payload": {"type": "task_started"}},
+            {"type": "event_msg", "payload": {"type": "token_count", "info": {"total_token_usage": {"total_tokens": 110}}}},
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            rollout = Path(directory) / "rollout-child.jsonl"
+            rollout.write_text("\n".join(json.dumps(row) for row in rows))
+            session = MODULE.parse_session(rollout)
+        self.assertTrue(session.unknown_fork_boundary)
+        self.assertEqual(session.usage, {})
 
 
 if __name__ == "__main__":

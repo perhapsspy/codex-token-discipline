@@ -94,9 +94,9 @@ always-read 파일을 고칠 때는 절차보다 짧은 routing rule을 선호�
 
 사용자가 토큰이 어디에 쓰였는지 물으면 이 스킬이 설치된 디렉터리를 기준으로 `scripts/summarize_codex_usage.py` 경로를 찾고 `--help`를 본 뒤, 명시적 `--cwd-prefix`로 감사한다.
 
-스크립트는 Codex rollout log를 root thread로 묶어 token total, cached-input rate, child-session token share, tool-output volume, large-output event, top output tool 신호를 보여준다. raw payload는 출력하지 않는다.
+스크립트는 Codex rollout log를 root thread로 묶어 token-event delta, turn-context의 model·effort attribution, root/child input·cached·output 분리, tool-output volume, large-output event, top output tool 신호를 보여준다. raw payload는 출력하지 않는다. 재현 가능한 event-time window에는 UTC ISO-8601 `--since`, `--until`을 쓰며, `--since-days`는 편의용 기본값으로 유지한다.
 
-토큰 총량은 품질 기준이 아니라 신호로 본다. 홈 전체 텍스트 검색은 피하고, `$CODEX_HOME/sessions` 같은 명시적 sessions root를 지정한다.
+event time이나 model context가 없으면 추정하지 않고 unknown으로 보고한다. child `thread_settings_applied` 경계가 없는 fork replay도 unknown으로 보고한다. delta는 닫는 token event에 귀속되므로 window 경계에는 이전 snapshot 이후의 작업이 포함될 수 있다. 토큰 총량은 billing total이나 품질 기준이 아니라 진단 신호로 본다. 홈 전체 텍스트 검색은 피하고, `$CODEX_HOME/sessions` 같은 명시적 sessions root를 지정한다.
 
 ## 최종 확인
 

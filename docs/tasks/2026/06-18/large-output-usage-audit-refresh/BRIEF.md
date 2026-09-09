@@ -2,13 +2,13 @@
 
 ## Goal
 
-- Refresh the installed `codex-token-discipline` skill so it directly guides large command/browser/image output control and provides a compact usage-audit script for diagnosing token hotspots.
+- Correct the bundled `codex-token-discipline` usage-audit script so it uses token-event time and cumulative-token deltas, while retaining compact output-control guidance.
 
 ## Scope
 
-- Update the shipped skill contract in `skills/codex-token-discipline/`.
-- Keep `$CODEX_HOME/AGENTS.md` and the portable `codex/AGENTS.md` change to one routing rule.
-- Do not change global model or reasoning defaults.
+- Update the shipped skill contract, bundled summarizer, and focused tests.
+- Keep the existing CLI compatible; add explicit reproducible-window flags.
+- Do not change model or reasoning defaults, installed skill cache, release, or catalog state.
 
 ## Current Facts
 
@@ -18,11 +18,12 @@
 
 ## Current State
 
-- The runtime skill now treats large tool results as future input cost and names browser/image/body/DOM outputs as main-thread risk.
-- The usage-audit script reports tool-output size, max output size, large-output event counts, browser/image and DOM/body signals, broad absolute-path searches, and top output tools without printing raw payloads.
-- Global and portable AGENTS route high-token work to `$codex-token-discipline` early.
-- Local validation passes: skill validation in a temporary PyYAML venv, script syntax/help, bounded playground and Conalog sample audits, project-context shape, and diff whitespace checks.
+- Rollout `token_count` records are cumulative snapshots; filesystem mtime cannot identify the requested accounting window.
+- `turn_context` records contain the observed model and effort. Missing event time or context must remain unknown.
+- Fork files can replay nested ancestor history; the final replay snapshot is a baseline, not child usage.
+- A replaying fork becomes attributable only at its first matching child `thread_settings_applied` event; a missing boundary remains unknown.
+- The focused suite has 12 passing tests, the bounded exact-window audit completed, and the scoped diff is clean.
 
 ## Next Step
 
-- Commit, push, then refresh the global installed skill with `npx skills update codex-token-discipline -g -y`.
+- The coordinating parent should commit and push the validated canonical source, then generate and review the bundle integration. Installed cache, release, and catalog state remain outside this task.

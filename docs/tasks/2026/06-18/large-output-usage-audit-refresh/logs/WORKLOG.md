@@ -1,5 +1,13 @@
 # Worklog
 
+**2026-09-09**
+
+- Reworked the bundled usage summarizer to aggregate deltas at `token_count` event times instead of filtering files by mtime or taking one final cumulative total.
+- Added explicit `--since` and `--until` bounds, observed model/effort attribution, root/child input-cached-output reporting, timestamp-filtered tool metrics, reset handling, and nested-fork replay baselines.
+- Added synthetic regressions for repeated cumulative records, reset records, turn-context model changes, and nested fork replay; missing event timestamps and model context remain explicitly unknown.
+- Corrected the replay boundary after an independent review: suppress inherited events through the first child `thread_settings_applied` marker, then use the next pre-task snapshot as the child baseline. Markerless replay stays unknown.
+- Validated the final source with all 12 focused tests, a bounded exact-window audit, project-context shape, and a clean whitespace diff.
+
 **2026-06-18**
 
 - Reviewed the existing global and portable AGENTS content, the skill repo ownership rules, shipped English/Korean skill pair, direction/reference docs, and existing usage-audit script.

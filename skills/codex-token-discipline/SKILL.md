@@ -97,9 +97,9 @@ When editing an always-read file, prefer a short routing rule over procedure tex
 
 When asked where tokens went, resolve `scripts/summarize_codex_usage.py` relative to this installed skill directory, run it with `--help`, then audit with an explicit `--cwd-prefix`.
 
-The script groups Codex rollout logs by root thread and reports token totals, cached-input rate, child-session token share, tool-output volume, large-output events, and top-output-tool signals without raw payloads.
+The script groups Codex rollout logs by root thread and reports token-event deltas, turn-context model and effort attribution, root/child input-cached-output splits, tool-output volume, large-output events, and top-output-tool signals without raw payloads. Use `--since` and `--until` with UTC ISO-8601 timestamps for a reproducible event-time window; `--since-days` remains a convenience default.
 
-Treat token totals as signals, not quality. Avoid home-wide text searches; point the script at `$CODEX_HOME/sessions` or another explicit sessions root.
+Missing event times or model context are reported as unknown rather than inferred. A fork replay without its child `thread_settings_applied` boundary is also reported as unknown. A delta belongs to its closing token event, so a window edge can include work since the prior snapshot. Treat token totals as diagnostic signals, not billing totals or quality. Avoid home-wide text searches; point the script at `$CODEX_HOME/sessions` or another explicit sessions root.
 
 ## Final Check
 
