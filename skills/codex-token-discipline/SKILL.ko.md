@@ -42,8 +42,8 @@ read, tool output, retry와 delegation을 제한한다. 재사용 가능한 증�
 
 좁게 시작하고, 다음 결정이 바뀔 때만 넓힌다.
 
-- 파일을 열기 전에 `rg`나 파일 목록을 먼저 쓴다.
-- 전체 diff보다 `git diff --stat`, `git diff --name-only`, focused `git diff -- <path>`, 좁은 `sed -n` 범위를 먼저 본다.
+- 관련 파일이나 범위를 알고 있다면 바로 읽고, 위치나 소유 주체가 불명확할 때 먼저 검색한다.
+- 크거나 출력량이 많은 결과는 요약이나 제한된 범위로 읽는다. 작은 관련 파일이나 diff는 전체를 읽는 편이 추가 호출이나 문맥 누락을 줄이면 그렇게 한다.
 - 로그와 명령 출력은 전체 transcript보다 `tail`, `head`, `jq`, count, filter, 에러 검색을 먼저 쓴다.
 - 반환된 모든 tool result는 다음 turn의 입력 비용으로 본다. 전체 출력보다 count, path, summary, 선택된 근거를 먼저 요청한다.
 - 실패 뒤에는 저장된 artifact에서 범위를 넓히거나 가장 작은 실패 범위만 다시 실행한다. main thread에 full transcript를 반복해서 들이지 않는다.
@@ -65,7 +65,7 @@ read, tool output, retry와 delegation을 제한한다. 재사용 가능한 증�
 
 위임 자체가 더 저렴한 것은 아니다. compact하고 독립적으로 유용한 증거나 산출물을 돌려줄 수 있는 bounded 작업에는 가장 좁은 named agent를 쓴다.
 
-agent 하나로 시작한다. 서로 독립되고 겹치지 않는 범위만 병렬화한다. 같은 조사를 중복하거나 통합 뒤 agent를 유지하거나 아직 유효한 검증을 반복하지 않는다.
+위임이 타당할 때 agent 하나로 시작한다. 서로 독립되고 겹치지 않는 범위만 병렬화한다. 같은 조사를 중복하거나 통합 뒤 agent를 유지하거나 아직 유효한 검증을 반복하지 않는다.
 
 scope, write boundary, done condition, validation과 기대하는 compact output을 전달한다. child는 다시 위임하지 않는다.
 

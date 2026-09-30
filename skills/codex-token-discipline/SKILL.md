@@ -1,6 +1,6 @@
 ---
 name: codex-token-discipline
-description: "Use for Codex work with clear excess-cost risk: broad or unpredictable logs and diffs, browser/UI loops, costly execution/retry loops and progress observation even with small output, subagents, repeated compaction, or explicit usage audits. Guides bounded execution and observation, preflight output limits, bounded delegation, evidence reuse, and compact checkpoints. Skip routine edits and direct answers. Routine test runs alone are not a trigger."
+description: "Use for Codex work with clear excess-cost risk: broad or unpredictable logs and diffs, browser/UI loops, costly execution/retry loops and progress observation even with small output, costly or repeated delegation, repeated compaction, or explicit usage audits. Guides bounded execution and observation, preflight output limits, bounded delegation, evidence reuse, and compact checkpoints. Skip routine edits and direct answers. Routine test runs alone are not a trigger."
 ---
 
 # Codex Token Discipline
@@ -45,8 +45,8 @@ Prevent excess output before it enters the main context; do not rely on summariz
 
 Start narrow; widen only when it changes the next decision.
 
-- Search with `rg` or file lists before opening files.
-- Prefer `git diff --stat`, `git diff --name-only`, focused `git diff -- <path>`, and targeted `sed -n` ranges before full diffs.
+- Read known relevant files or ranges directly; search first when their location or ownership is unclear.
+- Use summaries and bounded slices for large or noisy output. Read small relevant files or diffs in full when that avoids extra calls or missing context.
 - For logs and command output, use `tail`, `head`, `jq`, counts, filters, or error searches before full transcripts.
 - Treat every returned tool result as future input cost. Prefer counts, paths, summaries, or selected evidence before full output.
 - After a failure, widen from the saved artifact or rerun only the smallest failing scope; avoid repeated full transcripts in the main thread.
@@ -68,7 +68,7 @@ Do not store transcripts, validation matrices, or file inventories to compensate
 
 Delegation is not inherently cheaper. Use the narrowest named agent for bounded work that can return compact, independently useful evidence or output.
 
-Start with one agent. Parallelize only independent, non-overlapping scopes. Do not duplicate the same investigation, keep agents alive after integration, or repeat still-valid validation.
+When delegation is justified, start with one agent. Parallelize only independent, non-overlapping scopes. Do not duplicate the same investigation, keep agents alive after integration, or repeat still-valid validation.
 
 Prompt with scope, write boundary, done condition, validation, and expected compact output. Children must not delegate.
 
